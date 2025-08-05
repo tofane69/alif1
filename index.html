@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نقشه‌یاب هوشمند مدرن</title>
+
+    <!--
+      Jules' Note: The original project used local asset files which were missing.
+      I have replaced them with CDN links. The google_search tool was unavailable,
+      so I have used my best judgment to find these links. Please verify functionality.
+    -->
+
+    <!-- Vazir Font -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@32.1.0/dist/font-face.css">
+
+    <!-- LeafletJS (Map Library) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <!-- Jalali Datepicker -->
+    <link rel="stylesheet" href="https://unpkg.com/jalalidatepicker/dist/jalalidatepicker.min.css" />
+
+    <meta name="theme-color" content="#4a90e2">
+
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --container-bg: #ffffff;
+            --border-color: #dee2e6;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --accent-color: #4a90e2;
+            --accent-color-dark: #357ABD;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --warning-color: #ffc107;
+            --font-family: 'Vazir', sans-serif;
+            --border-radius: 16px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 5px 15px rgba(0,0,0,0.08);
+            --shadow-lg: 0 15px 30px rgba(0,0,0,0.1);
+            --input-height: 56px;
+        }
+
+        /* --- Base & Typography --- */
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
+            font-size: 16px;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            text-align: right;
+        }
+        h1 { font-size: 2.5rem; font-weight: 800; }
+        h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+        h4 { font-size: 1.25rem; font-weight: 700; }
+        p { margin: 0 0 1rem; }
+
+        /* --- Header & Search --- */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .search-form {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #addressInput {
+            width: 100%;
+            height: var(--input-height);
+            padding: 0 150px 0 25px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            background-color: var(--container-bg);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            box-shadow: var(--shadow-sm);
+        }
+        #addressInput:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+        #searchButton {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            height: calc(var(--input-height) - 12px);
+            width: 120px;
+            background-image: linear-gradient(45deg, var(--accent-color), var(--accent-color-dark));
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+        #searchButton:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        #searchButton:disabled {
+            background: #e9ecef;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            color: var(--text-secondary);
+        }
+        .spinner {
+            width: 24px; height: 24px; border: 3px solid rgba(0, 0, 0, 0.2);
+            border-radius: 50%; border-top-color: var(--text-primary);
+            animation: spin 1s ease-in-out infinite; display: none;
+        }
+        #searchButton:disabled .spinner { display: block; }
+        #searchButton:disabled #searchButtonText { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- Modal --- */
+        #modalContainer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(33, 37, 41, 0.6);
+            display: none; align-items: center; justify-content: center;
+            z-index: 2000; opacity: 0; transition: opacity 0.3s ease;
+        }
+        #modalContainer.visible { display: flex; opacity: 1; }
+        .modal-content {
+            background: var(--container-bg); padding: 30px; border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg); text-align: center; max-width: 400px;
+            width: 90%; animation: slide-down 0.4s ease-out;
+        }
+        @keyframes slide-down { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-buttons { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .modal-button {
+            width: 100%; padding: 14px; border: none; border-radius: 10px;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+        }
+        #searchApproximateBtn { background-color: var(--accent-color); color: white; }
+        #searchApproximateBtn:hover { background-color: var(--accent-color-dark); }
+        #searchExactBtn { background-color: var(--bg-color); color: var(--text-primary); border: 1px solid var(--border-color); }
+        #searchExactBtn:hover { background-color: var(--border-color); }
+
+        /* --- Error & Toast --- */
+        .error-message {
+            padding: 15px 20px; border-radius: var(--border-radius); background-color: #f8d7da;
+            color: #721c24; text-align: center; font-weight: 500; margin: 20px auto 0;
+            border: 1px solid #f5c6cb; display: none; max-width: 600px;
+        }
+        .toast-notification {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background-color: var(--text-primary); color: white; padding: 14px 28px;
+            border-radius: 10px; z-index: 3000; opacity: 0; transition: all 0.4s ease;
+            box-shadow: var(--shadow-lg); transform: translate(-50%, 100px);
+        }
+        .toast-notification.show { opacity: 1; transform: translate(-50%, 0); }
+
+        /* --- Results Grid & Cards --- */
+        #resultsGrid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 40px;
+            display: none; /* Initially hidden */
+        }
+        .grid-card {
+            display: none; /* Initially hidden */
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+        #mapCard {
+            padding: 0;
+            overflow: hidden;
+            height: 400px;
+            z-index: 1;
+        }
+        #map { height: 100%; width: 100%; cursor: pointer;}
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .card-header svg { width: 24px; height: 24px; color: var(--accent-color); }
+
+        /* --- Main Result Card --- */
+        .main-result-address {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+        #detailsContainer {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 1rem; margin-bottom: 1rem;
+        }
+        .detail-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background-color: var(--bg-color); border-radius: 12px;
+            padding: 12px 15px;
+        }
+        .detail-item-content { display: flex; flex-direction: column; }
+        .detail-item-label { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 2px; }
+        .detail-item-value { font-size: 1rem; font-weight: 700; }
+        .coord-value { direction: ltr; text-align: left; }
+        .copy-button {
+            background-color: transparent; border: none; color: var(--text-secondary);
+            padding: 8px; border-radius: 8px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .copy-button:hover { background-color: #e9ecef; }
+        .copy-button svg { width: 18px; height: 18px; }
+
+        /* --- Other Cards --- */
+        .links-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .action-link {
+            display: flex; align-items: center; justify-content: center;
+            padding: 15px; background-color: var(--bg-color);
+            border: 1px solid transparent; border-radius: 12px; text-decoration: none;
+            color: var(--text-primary); font-weight: 600; transition: all 0.2s ease;
+        }
+        .action-link:hover { border-color: var(--accent-color); color: var(--accent-color); background-color: #fff; }
+        .item-list {
+            list-style-type: none; padding: 0; margin-top: 15px;
+            max-height: 0; overflow-y: auto; transition: max-height 0.5s ease-in-out;
+        }
+        .grid-card.open .item-list { max-height: 1000px; }
+        .item-list li {
+            padding: 15px; border-radius: 12px; cursor: pointer; margin-bottom: 10px;
+            background-color: var(--bg-color); border: 1px solid transparent;
+            position: relative; display: flex; justify-content: space-between; align-items: center;
+            transition: all 0.2s ease;
+        }
+        .item-list li:not(.disabled):hover { border-color: var(--accent-color); background-color: #fff; }
+        .item-list li.disabled { cursor: not-allowed; opacity: 0.6; }
+        .list-item-details { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; display: block; }
+
+        /* --- Report Specific --- */
+        .report-actions { display: flex; gap: 10px; align-items: center; }
+        .delete-report-btn {
+            background-color: #f8d7da; color: #721c24; border: none; padding: 6px 12px;
+            font-size: 0.9rem; border-radius: 8px; cursor: pointer; white-space: nowrap; transition: background-color 0.2s;
+        }
+        .delete-report-btn:hover { background-color: #f1b0b7; }
+        .pending-status-text, .status-badge {
+            padding: 6px 12px; font-size: 0.9rem; border-radius: 8px; white-space: nowrap;
+        }
+        .pending-status-text { background-color: #fff3cd; color: #856404; }
+        .status-badge.resolved { background-color: #d4edda; color: #155724; }
+        .status-badge.deleted { background-color: #f8d7da; color: #721c24; }
+        #toggle-button {
+            width: 100%; margin-top: 15px; padding: 12px 15px; background: transparent;
+            border: 1px solid var(--border-color); border-radius: 12px;
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+            cursor: pointer; font-weight: 600; transition: all 0.2s;
+        }
+        #toggle-button:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        #toggle-button svg { transition: transform 0.3s ease; }
+        .grid-card.open #toggle-button svg { transform: rotate(180deg); }
+
+        /* --- Report Form --- */
+        #reportFormContainer { max-height: 0; overflow: hidden; transition: max-height 0.7s ease; }
+        #reportFormContainer.open { max-height: 1000px; }
+        #toggleReportFormLabel {
+            display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 1.1rem;
+            font-weight: 600; padding: 10px; border-radius: 12px;
+        }
+        #toggleReportFormLabel:hover { background-color: var(--bg-color); }
+        #reportSubCheckboxes { margin-top:15px; padding-top:15px; border-top: 1px solid var(--border-color); }
+        #problemTypeCheckboxes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        #problemTypeCheckboxes label {
+            display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+            background-color: var(--bg-color); border-radius: 10px; cursor: pointer;
+        }
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
+        .form-field select, .form-field input, input[data-jdp] {
+            width: 100%; box-sizing: border-box; padding: 12px;
+            border: 1px solid var(--border-color); border-radius: 10px;
+            font-family: inherit; font-size: 1rem; background-color: var(--bg-color);
+        }
+        .form-field select:focus, .form-field input:focus, input[data-jdp]:focus {
+            outline: none; border-color: var(--accent-color);
+            background-color: var(--container-bg);
+        }
+        #submitReportBtn {
+            width: 100%; margin-top: 20px; padding: 16px;
+            background-color: var(--accent-color-dark); color: white;
+            border-radius: 12px; border: none; cursor: pointer; font-size: 1.1rem;
+            font-weight: 600; transition: background-color 0.2s;
+        }
+        #submitReportBtn:hover { background-color: var(--accent-color); }
+        .admin-note {
+            margin-top: 20px; padding: 15px; background-color: #fffbe6;
+            border: 1px solid #ffe58f; border-radius: 12px;
+        }
+        .admin-note strong { color: #d97706; }
+
+        /* --- Footer --- */
+        .footer {
+            text-align: center; margin-top: 50px; padding-top: 20px;
+            width: 100%; border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        .footer .heart-icon {
+            color: #e53935; display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+        /* --- Responsive Design --- */
+        @media (min-width: 768px) {
+            body { padding: 40px; }
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            #submitReportBtn { width: 50%; margin-right: auto; margin-left: auto; }
+        }
+
+        @media (min-width: 992px) {
+            #resultsGrid {
+                grid-template-columns: 1fr 1fr;
+            }
+            #mapCard {
+                grid-column: 2 / 3;
+                grid-row: 1 / 4; /* Span across multiple rows */
+                height: auto;
+                position: sticky; /* Make map sticky */
+                top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>نقشه‌یاب هوشمند</h1>
+            <p>آدرس, مختصات دقیق جغرافیایی یا شماره گزارش را وارد کنید</p>
+        </header>
+        <div class="search-form">
+            <input type="text" id="addressInput" placeholder="مثال: تهران، میدان آزادی یا 09123456789">
+            <button id="searchButton">
+                <span id="searchButtonText">جستجو</span>
+                <div class="spinner"></div>
+            </button>
+        </div>
+        <div id="modalContainer"></div>
+        <div id="errorContainer" class="error-message"><p id="errorMessage"></p></div>
+
+        <div id="resultsGrid">
+            <div id="mainResultCard" class="grid-card"></div>
+            <div id="mapLinksCard" class="grid-card"></div>
+            <div id="reportCard" class="grid-card"></div>
+            <div id="otherReportsCard" class="grid-card"></div>
+            <div id="similarAddressesCard" class="grid-card"></div>
+            <div id="secondarySearchContainer" class="grid-card"></div>
+            <div id="mapCard" class="grid-card"><div id="map"></div></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>طراحی و توسعه با <span class="heart-icon">❤️</span> توسط رضا عباسی</p>
+    </footer>
+
+    <!-- JS libraries from CDN -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        // --- Element Cache ---
+        const elements = {
+            addressInput: $('#addressInput'), searchButton: $('#searchButton'), resultsGrid: $('#resultsGrid'),
+            errorContainer: $('#errorContainer'), errorMessage: $('#errorMessage'), mainResultCard: $('#mainResultCard'),
+            mapLinksCard: $('#mapLinksCard'), mapCard: $('#mapCard'), mapDiv: document.getElementById('map'),
+            reportCard: $('#reportCard'), otherReportsCard: $('#otherReportsCard'), similarAddressesCard: $('#similarAddressesCard'),
+            secondarySearchContainer: $('#secondarySearchContainer'), modalContainer: $('#modalContainer')
+        };
+        let map, marker, isMapInit = false;
+        const iranianProvinces = ['آذربایجان شرقی', 'آذربایجان غربی', 'اردبیل', 'اصفهان', 'البرز', 'ایلام', 'بوشهر', 'تهران', 'چهارمحال و بختیاری', 'خراسان جنوبی', 'خراسان رضوی', 'خراسان شمالی', 'خوزستان', 'زنجان', 'سمنان', 'سیستان و بلوچستان', 'فارس', 'قزوین', 'قم', 'کردستان', 'کرمان', 'کرمانشاه', 'کهگیلویه و بویراحمد', 'گلستان', 'گیلان', 'لرستان', 'مازندران', 'مرکزی', 'هرمزگان', 'همدان', 'یزد'].sort();
+
+        // --- Initializers ---
+        checkForUrlParams();
+        elements.searchButton.on('click', handleSearch);
+        elements.addressInput.on('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } });
+        elements.modalContainer.on('click', '#searchApproximateBtn', () => performApiSearch('search'));
+        elements.modalContainer.on('click', '#searchExactBtn', () => performApiSearch('geocode'));
+        elements.modalContainer.on('click', function(e) { if (e.target === this) { elements.modalContainer.removeClass('visible'); } });
+        elements.resultsGrid.on('click', '.delete-report-btn', function(e) {
+            e.stopPropagation();
+            if (confirm('آیا از درخواست حذف این گزارش اطمینان دارید؟')) handleDeleteRequest($(this).data('id'), $(this));
+        });
+        elements.resultsGrid.on('click', '#toggle-button', function() {
+            const card = $(this).closest('.grid-card').toggleClass('open');
+            const list = card.find('.item-list');
+            list.css('max-height', card.hasClass('open') ? list[0].scrollHeight + 'px' : '0');
+        });
+        elements.resultsGrid.on('click', '.item-list li:not(.disabled)', function() {
+            updateUIAfterSelection($(this).data('item'), $(this).data('is-report'));
+        });
+
+        // --- Search Logic ---
+        function handleSearch() {
+            const query = elements.addressInput.val().trim();
+            if (!query) return showError("لطفاً یک عبارت برای جستجو وارد کنید.");
+            hideError();
+            resetUI();
+            setLoadingState(true);
+            try {
+                if (/^(0)?9\d{9}$/.test(query.replace(/\s/g,''))) {
+                    findByPhone(query);
+                } else {
+                    showModal();
+                }
+            } catch (e) {
+                console.error('Error in handleSearch:', e);
+                showError(e.message);
+                setLoadingState(false);
+            }
+        }
+
+        function showModal() {
+            setLoadingState(false);
+            const modalHtml = `<div class="modal-content"><h3>نوع جستجوی آدرس</h3><p>آدرس دقیق برای یافتن یک نقطه خاص و آدرس حدودی برای یافتن نقاط نزدیک به یک عبارت مناسب است.</p><div class="modal-buttons"><button id="searchApproximateBtn" class="modal-button">🔎 آدرس حدودی</button><button id="searchExactBtn" class="modal-button">📍 آدرس دقیق</button></div></div>`;
+            elements.modalContainer.html(modalHtml).addClass('visible');
+        }
+
+        async function performApiSearch(type) {
+            elements.modalContainer.removeClass('visible');
+            setLoadingState(true);
+            try {
+                const query = elements.addressInput.val().trim();
+                const data = await apiCall({ action: 'neshan_proxy', type: type, query });
+                if (data.result?.items?.length > 0) {
+                    displayAddressResults(data.result.items);
+                } else if (data.result?.location) {
+                    const item = { title: data.result.formatted_address || query, address: '', location: data.result.location };
+                    displayAddressResults([item]);
+                } else {
+                    showNoResultsFound();
+                }
+                showSecondarySearchLink(query);
+            } catch (e) {
+                showError(e.message);
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        async function findByPhone(phone) {
+            setLoadingState(true);
+            try {
+                const data = await apiCall({ action: 'find_by_phone', phone });
+                if (data.results?.length > 0) {
+                    const reports = data.results.map(row => ({
+                        id: row.id || null,
+                        status: row.status || 'active',
+                        title: `گزارش در: ${row.jalali_date || ''} ساعت ${row.time_only || ''}`,
+                        address: `استان: ${row.province || ''}`,
+                        problem_types: parseJson(row.problem_types, []),
+                        location: { y: parseFloat(row.lat) || 0, x: parseFloat(row.lng) || 0 },
+                        admin_notes: row.admin_notes || '',
+                        jalali_date: row.jalali_date || '',
+                        time_only: row.time_only || ''
+                    }));
+                    displayReportResults(reports);
+                } else {
+                    showError(`هیچ گزارشی برای شماره ${data.normalized_phone || 'وارد شده'} یافت نشد.`);
+                }
+            } catch(e) {
+                showError(e.message);
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        // --- Result Display ---
+        function displayAddressResults(items) {
+            resetUI();
+            const [firstResult, ...similarItems] = items;
+            elements.resultsGrid.show().css('display', 'grid');
+            updateUIAfterSelection(firstResult, false);
+            buildAndShowReportCard(firstResult.location);
+            if (similarItems.length > 0) {
+                populateSimilarItems(similarItems);
+                elements.similarAddressesCard.show();
+            }
+            showSecondarySearchLink(elements.addressInput.val());
+            elements.secondarySearchContainer.show();
+        }
+
+        function displayReportResults(reports) {
+            resetUI();
+            elements.resultsGrid.show().css('display', 'grid');
+            const [firstResult, ...otherReports] = reports;
+            updateUIAfterSelection(firstResult, true);
+            if (reports.length > 0) { // Always show other reports card if there are any reports
+                populateOtherReports(reports);
+                elements.otherReportsCard.show();
+            }
+            if (firstResult.location) {
+                 updateMap(firstResult.location.y, firstResult.location.x);
+                 updateMapLinksCard(firstResult.location);
+                 elements.mapCard.show();
+                 elements.mapLinksCard.show();
+            }
+        }
+
+        function updateUIAfterSelection(item, isReport = false) {
+            updateMainResultCard(item, isReport);
+            updateMapLinksCard(item.location);
+            updateMap(item.location.y, item.location.x);
+            ['mainResultCard', 'mapLinksCard', 'mapCard'].forEach(id => elements[id].show());
+            if (!isReport) {
+                buildAndShowReportCard(item.location);
+            } else {
+                elements.reportCard.hide();
+            }
+        }
+
+        // --- Map Logic ---
+        async function handleMapClick(lat, lng, moveMarker = true) {
+             if (isMapInit && moveMarker) marker.setLatLng([lat, lng]);
+             setLoadingState(true);
+             try {
+                 const data = await apiCall({ action: 'reverse_geocode', lat, lng });
+                 const title = data.result?.formatted_address || `موقعیت روی نقشه`;
+                 const item = { title, address: ``, location: { y: lat, x: lng } };
+                 displayAddressResults([item]);
+             } catch(e) {
+                 showError(e.message);
+             } finally {
+                 setLoadingState(false);
+             }
+        }
+
+        function initMap() {
+            if (isMapInit) return;
+            isMapInit = true;
+            map = L.map(elements.mapDiv, { zoomControl: false });
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            marker = L.marker([35.7, 51.4], { draggable: true }).addTo(map);
+            map.on('click', e => handleMapClick(e.latlng.lat, e.latlng.lng));
+            marker.on('dragend', e => handleMapClick(e.target.getLatLng().lat, e.target.getLatLng().lng));
+        }
+
+        function updateMap(lat, lng) {
+            if (!isMapInit) initMap();
+            map.setView([lat, lng], 15);
+            marker.setLatLng([lat, lng]);
+            setTimeout(() => { if(map) map.invalidateSize() }, 100);
+        }
+
+        // --- Card Builders ---
+        function buildAndShowReportCard(location) {
+            const card = elements.reportCard;
+            card.html(`<div class="card-header"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg><h3>ثبت گزارش برای این آدرس</h3></div><label id="toggleReportFormLabel" for="toggleReportForm"><input type="checkbox" id="toggleReportForm"> می‌خواهم گزارش ثبت کنم.</label><div id="reportFormContainer"><div id="reportSubCheckboxes" style="display:none;"><p>نوع مشکل:</p><div id="problemTypeCheckboxes"><label><input type="checkbox" name="problem_type" value="زیر 24 ساعت"> زیر ۲۴ ساعت</label> <label><input type="checkbox" name="problem_type" value="دانلس"> دانلس</label> <label><input type="checkbox" name="problem_type" value="کامنت"> کامنت</label> <label><input type="checkbox" name="problem_type" value="نمونه شماره"> نمونه شماره</label></div></div><form id="reportForm"><div class="form-grid" style="display:none;"><div class="form-field"><label for="phoneNumber">شماره تماس</label><input type="tel" id="phoneNumber" required></div><div class="form-field"><label for="province">استان</label><select id="province" required></select></div><div class="form-field"><label for="jalaliDate">تاریخ</label><input type="text" id="jalaliDate" data-jdp required></div><div class="form-field" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"><div><label for="reportHour">ساعت</label><select id="reportHour" required></select></div><div><label for="reportMinute">دقیقه</label><select id="reportMinute" required></select></div></div></div><input type="hidden" id="reportLat"><input type="hidden" id="reportLng"><button type="button" id="submitReportBtn" style="display:none;">ثبت گزارش</button></form></div>`);
+
+            const formElements = {
+                toggleReport: card.find('#toggleReportForm'), formContainer: card.find('#reportFormContainer'),
+                subCheckboxes: card.find('#reportSubCheckboxes'), problemCheckboxes: card.find('#problemTypeCheckboxes'),
+                formGrid: card.find('.form-grid'), submitBtn: card.find('#submitReportBtn'),
+                provinceSelect: card.find('#province'), latInput: card.find('#reportLat'), lngInput: card.find('#reportLng'),
+                jalaliDateInput: card.find('#jalaliDate')
+            };
+
+            formElements.toggleReport.on('change', function() {
+                const isChecked = this.checked;
+                formElements.formContainer.toggleClass('open', isChecked);
+                formElements.subCheckboxes.toggle(isChecked);
+                if (!isChecked) {
+                    formElements.problemCheckboxes.find('input').prop('checked', false).trigger('change');
+                }
+            });
+
+            formElements.problemCheckboxes.on('change', 'input', () => {
+                const anyChecked = card.find('#problemTypeCheckboxes input:checked').length > 0;
+                formElements.formGrid.toggle(anyChecked);
+                formElements.submitBtn.toggle(anyChecked);
+            });
+
+            formElements.submitBtn.on('click', () => handleReportSubmit(card));
+
+            $.each(iranianProvinces, (i, p) => formElements.provinceSelect.append(new Option(p, p)));
+            for (let i=0;i<24;i++) card.find('#reportHour').append(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
+            for (let i=0;i<60;i++) card.find('#reportMinute').append(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
+            formElements.latInput.val(location.y);
+            formElements.lngInput.val(location.x);
+
+            if (typeof jalaliDatepicker !== 'undefined' && formElements.jalaliDateInput.length) {
+                jalaliDatepicker.startWatch({ target: formElements.jalaliDateInput[0], calendar: { lang: 'fa' }, time: false, todayButtonText: 'امروز' });
+            } else {
+                console.warn('jalaliDatepicker object not found.');
+            }
+            card.show();
+        }
+
+        async function handleReportSubmit(card) {
+            setLoadingState(true);
+            const pTypes = card.find('#problemTypeCheckboxes input:checked').map((_, el) => el.value).get();
+            if (pTypes.length === 0) { showToast('لطفا نوع مشکل را انتخاب کنید.'); return setLoadingState(false); }
+            const jalaliDate = card.find('#jalaliDate').val();
+            if(!jalaliDate) { showToast('لطفا تاریخ گزارش را انتخاب کنید.'); return setLoadingState(false); }
+
+            try {
+                await apiCall({
+                    action:'submit_report', phoneNumber: card.find('#phoneNumber').val(), province: card.find('#province').val(),
+                    jalaliDate: jalaliDate, reportTime: `${card.find('#reportHour').val()}:${card.find('#reportMinute').val()}`,
+                    problemTypes: pTypes, lat: card.find('#reportLat').val(), lng: card.find('#reportLng').val()
+                });
+                showToast("گزارش با موفقیت ثبت شد.");
+                card.find('form')[0].reset();
+                card.find('#toggleReportForm').prop('checked',false).trigger('change');
+            } catch(e){
+                showError(e.message);
+            } finally{
+                setLoadingState(false);
+            }
+        }
+
+        function updateMainResultCard(item, isReport = false) {
+            let actionsHtml = '';
+            let statusBadge = '';
+            let title = item.title;
+
+            if (isReport) {
+                title = `گزارش در: ${item.jalali_date || ''} ساعت ${item.time_only || ''}`;
+                switch(item.status) {
+                    case 'pending_deletion':
+                        statusBadge = `<span class="pending-status-text">در انتظار تایید حذف</span>`;
+                        break;
+                    case 'resolved':
+                        statusBadge = `<span class="status-badge resolved">رفع مشکل شده</span>`;
+                        actionsHtml = `<div class="report-actions"><button class="delete-report-btn" data-id="${item.id}">درخواست حذف</button></div>`;
+                        break;
+                    case 'deleted':
+                        statusBadge = `<span class="status-badge deleted">حذف شده</span>`;
+                        break;
+                    default: // 'active'
+                        actionsHtml = `<div class="report-actions"><button class="delete-report-btn" data-id="${item.id}">درخواست حذف</button></div>`;
+                }
+            }
+
+            const notesHtml = (isReport && item.admin_notes) ? `<div class="admin-note"><strong>یادداشت مدیر:</strong><p>${item.admin_notes.replace(/\n/g, '<br>')}</p></div>` : '';
+
+            const html = `
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
+                    <h3>نتیجه اصلی</h3>
+                </div>
+                <h4>${statusBadge} ${title}</h4>
+                <p class="main-result-address">${item.address || ''}</p>
+                <div id="detailsContainer">${[createCoordinateDetail('عرض جغرافیایی', item.location.y), createCoordinateDetail('طول جغرافیایی', item.location.x)].join('')}</div>
+                ${actionsHtml}${notesHtml}`;
+            elements.mainResultCard.html(html).find('.copy-button').on('click', function() {
+                copyToClipboard($(this).data('value'), $(this).data('type'));
+            });
+        }
+
+        function populateSimilarItems(items) {
+            const list = items.map(i => `<li data-item='${JSON.stringify(i)}' data-is-report="false"><div>${i.title}<span class="list-item-details">${i.address||''}</span></div></li>`).join('');
+            const html = `<div class="card-header"><h3>نتایج مشابه</h3></div><button id="toggle-button"><span>نمایش ${items.length} نتیجه مشابه</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg></button><ul class="item-list">${list}</ul>`;
+            elements.similarAddressesCard.html(html).closest('.grid-card').addClass('open').find('.item-list').css('max-height', '1000px');
+        }
+
+        function populateOtherReports(items) {
+            const list = items.map(i => {
+                let actionHtml = '';
+                let statusBadge = '';
+                let detailsText = '';
+                const problemTypesDisplay = (Array.isArray(i.problem_types) && i.problem_types.length > 0) ? `مشکل: ${i.problem_types.join(', ')}` : '';
+
+                switch(i.status) {
+                    case 'pending_deletion':
+                        actionHtml = `<span class="pending-status-text">در انتظار تایید</span>`;
+                        detailsText = `وضعیت: در انتظار حذف`;
+                        break;
+                    case 'resolved':
+                        statusBadge = `<span class="status-badge resolved">رفع شده</span>`;
+                        actionHtml = `<button class="delete-report-btn" data-id="${i.id}">حذف</button>`;
+                        detailsText = `وضعیت: رفع مشکل شده`;
+                        break;
+                    case 'deleted':
+                        statusBadge = `<span class="status-badge deleted">حذف شده</span>`;
+                        detailsText = `وضعیت: حذف شده`;
+                        break;
+                    default: // 'active'
+                        actionHtml = `<button class="delete-report-btn" data-id="${i.id}">حذف</button>`;
+                        detailsText = `وضعیت: در حال بررسی. ${problemTypesDisplay}`;
+                }
+
+                const disabledClass = (i.status === 'pending_deletion' || i.status === 'deleted') ? 'disabled' : '';
+
+                return `<li data-item='${JSON.stringify(i)}' data-is-report="true" class="${disabledClass}">
+                            <div>
+                                ${i.title} ${statusBadge}
+                                <span class="list-item-details">${detailsText}</span>
+                            </div>
+                            <div class="report-actions">${actionHtml}</div>
+                        </li>`;
+            }).join('');
+
+            const html = `<div class="card-header"><h3>گزارش‌های این شماره</h3></div><ul class="item-list">${list}</ul>`;
+            elements.otherReportsCard.html(html).closest('.grid-card').addClass('open').find('.item-list').css('max-height', '1000px');
+        }
+
+        function showSecondarySearchLink(query) {
+            const html = `<div class="card-header"><h3>جستجوی بیشتر</h3></div><div class="links-grid"><a href="https://zarebin.ir/search?q=${encodeURIComponent(query)}" target="_blank" class="action-link">ذره‌بین</a><a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" class="action-link">گوگل</a></div>`;
+            elements.secondarySearchContainer.html(html);
+        }
+
+        // --- API & Helpers ---
+        async function apiCall(body) {
+            try {
+                const response = await fetch('api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                const responseText = await response.text();
+                if (!response.ok) {
+                    console.error('API Error Response Text:', responseText);
+                    throw new Error(`خطای شبکه: ${response.status}.`);
+                }
+                const data = parseJson(responseText);
+                if (data.status === 'error') throw new Error(data.message);
+                return data;
+            } catch(e) {
+                console.error("apiCall failed:", e);
+                throw e;
+            }
+        }
+
+        function parseJson(str, fallback = null) {
+            try {
+                if (str && typeof str === 'string') return JSON.parse(str);
+                return str; // It might already be an object
+            } catch (e) {
+                console.warn("JSON parse error:", e, "returning fallback. String was:", str);
+                return fallback;
+            }
+        }
+
+        function createCoordinateDetail(label, value) {
+            const fVal = parseFloat(value).toFixed(6);
+            return `<div class="detail-item"><div class="detail-item-content"><span class="detail-item-label">${label}</span><div class="detail-item-value coord-value">${fVal}</div></div><button class="copy-button" data-value="${fVal}" data-type="${label}" title="کپی"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" /><path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h6a2 2 0 00-2-2H5z" /></svg></button></div>`;
+        }
+
+        function updateMapLinksCard(loc) {
+            elements.mapLinksCard.html(`<div class="card-header"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z" /><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg><h3>مشاهده روی نقشه</h3></div><div class="links-grid"><a href="https://neshan.org/maps/search/${loc.y},${loc.x}" class="action-link" target="_blank">نشان</a><a href="https://www.google.com/maps?q=${loc.y},${loc.x}" class="action-link" target="_blank">گوگل</a></div>`);
+        }
+
+        function copyToClipboard(text, type) {
+            navigator.clipboard.writeText(text).then(() => showToast(`"${type}" کپی شد!`));
+        }
+
+        function resetUI() {
+            hideError();
+            elements.resultsGrid.hide();
+            $('.grid-card').hide();
+            $('.grid-card.open').removeClass('open').find('.item-list').css('max-height', '0');
+        }
+
+        function setLoadingState(isLoading) {
+            elements.searchButton.prop('disabled', isLoading);
+        }
+
+        function showError(msg) {
+            elements.errorMessage.text(msg);
+            elements.errorContainer.show();
+        }
+
+        function hideError() {
+            elements.errorContainer.hide();
+        }
+
+        function showNoResultsFound() {
+            showError("موردی با این مشخصات یافت نشد.");
+        }
+
+        function showToast(message) {
+            $('.toast-notification').remove();
+            const toast = $('<div>').addClass('toast-notification').text(message);
+            $('body').append(toast);
+            setTimeout(() => toast.addClass('show'), 10);
+            setTimeout(() => toast.removeClass('show').on('transitionend', () => toast.remove()), 3000);
+        }
+
+        async function checkForUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const lat = urlParams.get('lat');
+            const lng = urlParams.get('lng');
+            if(lat && lng) {
+                elements.addressInput.val(`مختصات: ${lat}, ${lng}`);
+                await handleMapClick(parseFloat(lat), parseFloat(lng), false);
+            }
+        }
+    });
+    </script>
+</body>
+</html>
