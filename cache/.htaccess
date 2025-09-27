@@ -1,0 +1,2 @@
+# Deny all requests from being served
+Deny from all

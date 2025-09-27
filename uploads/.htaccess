@@ -1,0 +1,10 @@
+# Deny all requests from being served
+<Files *>
+    Deny from all
+</Files>
+
+# Forcing files to be downloaded
+<FilesMatch "\.(?i:pdf|doc|docx|xls|xlsx|mp3|wav|jpg|jpeg|png|gif)$">
+    ForceType application/octet-stream
+    Header set Content-Disposition "attachment"
+</FilesMatch>
