@@ -23,6 +23,22 @@ SET time_zone = "+03:30";
 CREATE DATABASE IF NOT EXISTS `kb` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE `kb`;
 
+-- Drop existing tables if they exist to allow for a clean reinstall
+SET FOREIGN_KEY_CHECKS=0;
+DROP TABLE IF EXISTS `article_views`;
+DROP TABLE IF EXISTS `activity_logs`;
+DROP TABLE IF EXISTS `notifications`;
+DROP TABLE IF EXISTS `likes`;
+DROP TABLE IF EXISTS `comments`;
+DROP TABLE IF EXISTS `article_tags`;
+DROP TABLE IF EXISTS `tags`;
+DROP TABLE IF EXISTS `article_versions`;
+DROP TABLE IF EXISTS `articles`;
+DROP TABLE IF EXISTS `categories`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `roles`;
+SET FOREIGN_KEY_CHECKS=1;
+
 -- --------------------------------------------------------
 
 --
