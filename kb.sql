@@ -20,8 +20,6 @@ SET time_zone = "+03:30";
 --
 -- Database: `kb`
 --
-CREATE DATABASE IF NOT EXISTS `kb` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `kb`;
 
 -- Drop existing tables if they exist to allow for a clean reinstall
 SET FOREIGN_KEY_CHECKS=0;

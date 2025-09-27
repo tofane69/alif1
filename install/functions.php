@@ -73,18 +73,22 @@ function import_sql_file($conn, $sqlFilePath) {
         return false;
     }
 
-    // Execute multi-query
-    if ($conn->multi_query($sql)) {
-        // Must flush all results from the multi_query
-        while ($conn->next_result()) {
-            if ($conn->more_results()) {
-                $conn->next_result();
+    // Split the SQL file into individual queries.
+    // This is a more robust way than multi_query on some systems.
+    $queries = preg_split('/;\s*(\r\n|\n|\r)/', $sql);
+
+    foreach ($queries as $query) {
+        $query = trim($query);
+        if (!empty($query)) {
+            if ($conn->query($query) === FALSE) {
+                // If a query fails, stop and return false.
+                // The error can be retrieved with $conn->error
+                return false;
             }
         }
-        return true;
-    } else {
-        return false;
     }
+
+    return true;
 }
 
 /**
