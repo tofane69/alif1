@@ -28,7 +28,7 @@ $all_met = all_requirements_met($requirements);
 <div class="mt-4 text-center">
     <?php if ($all_met): ?>
         <p class="text-success">تمام پیش‌نیازها با موفقیت برآورده شده‌اند. می‌توانید به مرحله بعد بروید.</p>
-        <form method="post" action="index.php?step=2">
+        <form method="post" action="index.php?step=1">
             <button type="submit" class="btn btn-primary btn-next">ادامه</button>
         </form>
     <?php else: ?>
