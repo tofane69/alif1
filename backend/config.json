@@ -1,0 +1,10 @@
+{
+  "telegram_channels": [
+    "https://t.me/example_channel_1",
+    "https://t.me/example_channel_2"
+  ],
+  "rubika_channels": [
+    "https://rubika.ir/example_rubika_1",
+    "https://rubika.ir/example_rubika_2"
+  ]
+}
